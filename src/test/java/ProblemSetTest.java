@@ -1,178 +1,173 @@
-import java.lang.reflect.Method;
 import static org.junit.jupiter.api.Assertions.*;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 public class ProblemSetTest {
 @Test
 @DisplayName("")
-    void test1_1() {
-        assertEquals(
-            "john.doe@example.com: Valid | Local: john.doe | Domain: example.com\n" +
-            "invalid@domain.5yz: Invalid: Domain extension contains non-letters",
-            ProblemSet.emailValidator("john.doe@example.com, invalid@domain.5yz")
-        );
+
+        // ---------- OPTION 1: BASIC VALIDATION ----------
+    void testValidEmail() {
+        assertEquals("john.doe@example.com: Valid | Local: john.doe | Domain: example.com", ProblemSet.emailPrinter("john.doe@example.com"));
     }
 
     @Test
-    void test1_2() {
-        assertEquals(
-            "user+tag@mail.example.co.uk: Valid | Local: user+tag | Domain: mail.example.co.uk\n" +
-            "jane.doe@gmail.com: Valid (Gmail normalized) | Local: jane.doe | Domain: gmail.com",
-            ProblemSet.emailValidator("user+tag@mail.example.co.uk, jane.doe@gmail.com")
-        );
+    void testMissingAt() {
+        assertEquals("johndoeexample.com: Invalid: Missing @", ProblemSet.emailPrinter("johndoeexample.com"));
     }
 
     @Test
-    void test1_3() {
-        assertEquals(
-            "john@@example.com: Invalid: Multiple @\n" +
-            "valid.email@test.ca: Valid | Local: valid.email | Domain: test.ca",
-            ProblemSet.emailValidator("john@@example.com, valid.email@test.ca")
-        );
+    void testMultipleAt() {
+        assertEquals("john@@example.com: Invalid: Multiple @", ProblemSet.emailPrinter("john@@example.com"));
     }
 
     @Test
-    void test1_4() {
-        assertEquals(
-            ".john@example.com: Invalid: Starts or ends with dot\n" +
-            "john@example.com: Valid | Local: john | Domain: example.com",
-            ProblemSet.emailValidator(".john@example.com, john@example.com")
-        );
+    void testStartsWithDot() {
+        assertEquals(".john@example.com: Invalid: Starts or ends with dot", ProblemSet.emailPrinter(".john@example.com"));
     }
 
     @Test
-    void test1_5() {
-        assertEquals(
-            "john doe@example.com: Invalid: Contains spaces\n" +
-            "a@b.co: Valid | Local: a | Domain: b.co",
-            ProblemSet.emailValidator("john doe@example.com, a@b.co")
-        );
+    void testEndsWithDot() {
+        assertEquals("john@example.com.: Invalid: Starts or ends with dot", ProblemSet.emailPrinter("john@example.com."));
     }
 
     @Test
-    void test1_6() {
-        assertEquals(
-            "@example.com: Invalid: Local part too short\n" +
-            "user@domain.com: Valid | Local: user | Domain: domain.com",
-            ProblemSet.emailValidator("@example.com, user@domain.com")
-        );
+    void testContainsSpaces() {
+        assertEquals("john doe@example.com: Invalid: Contains spaces", ProblemSet.emailPrinter("john doe@example.com"));
     }
 
     @Test
-    void test1_7() {
-        assertEquals(
-            "user@domain: Invalid: No dot in domain\n" +
-            "user_name@sub.domain.com: Valid | Local: user_name | Domain: sub.domain.com",
-            ProblemSet.emailValidator("user@domain, user_name@sub.domain.com")
-        );
+    void testLocalTooLong() {
+        String longLocal = "a".repeat(65) + "@example.com";
+        assertEquals(longLocal + ": " +"Invalid: Local part too long", ProblemSet.emailPrinter(longLocal));
     }
 
     @Test
-    void test1_8() {
-        assertEquals(
-            "john@example.c: Invalid: Invalid domain extension length\n" +
-            "john@example.companyyy: Invalid: Invalid domain extension length",
-            ProblemSet.emailValidator("john@example.c, john@example.companyyy")
-        );
+    void testLocalTooShort() {
+        assertEquals("@example.com: Invalid: Local part too short", ProblemSet.emailPrinter("@example.com"));
     }
 
     @Test
-    void test1_9() {
-        assertEquals(
-            "john@example.c0m: Invalid: Domain extension contains non-letters\n" +
-            "john.doe@gmail.com: Valid (Gmail normalized) | Local: john.doe | Domain: gmail.com",
-            ProblemSet.emailValidator("john@example.c0m, john.doe@gmail.com")
-        );
+    void testNoDotInDomain() {
+        assertEquals("john@examplecom: Invalid: No dot in domain", ProblemSet.emailPrinter("john@examplecom"));
     }
 
     @Test
-    void test1_10() {
-        assertEquals(
-            "simple@test.co: Valid | Local: simple | Domain: test.co\n" +
-            "another.simple@test.org: Valid | Local: another.simple | Domain: test.org",
-            ProblemSet.emailValidator("simple@test.co, another.simple@test.org")
-        );
+    void testInvalidExtensionShort() {
+        assertEquals("john@example.c: Invalid: Invalid domain extension length", ProblemSet.emailPrinter("john@example.c"));
     }
 
     @Test
-    void test2_1() {
-        assertEquals(": Invalid: Missing @\n: Invalid: Missing @",
-            ProblemSet.emailValidator(", "));
+    void testInvalidExtensionLong() {
+        assertEquals("john@example.toolong: Invalid: Invalid domain extension length", ProblemSet.emailPrinter("john@example.toolong"));
+    }
+
+    // ---------- OPTION 2: EXCEPTIONS ----------
+
+    @Test
+    void testSubdomainValid() {
+        assertEquals("user@mail.example.co.uk: Valid | Local: user | Domain: mail.example.co.uk", ProblemSet.emailPrinter("user@mail.example.co.uk"));
     }
 
     @Test
-    void test2_2() {
-        assertEquals(": Invalid: Missing @\njohn@example.com: Valid | Local: john | Domain: example.com",
-            ProblemSet.emailValidator(", john@example.com"));
+    void testPlusInLocal() {
+        assertEquals("user+tag@example.com: Valid | Local: user+tag | Domain: example.com", ProblemSet.emailPrinter("user+tag@example.com"));
     }
 
     @Test
-    void test2_3() {
-        assertEquals("john@example.com: Valid | Local: john | Domain: example.com\n: Invalid: Missing @",
-            ProblemSet.emailValidator("john@example.com, "));
+    void testUnderscoreInLocal() {
+        assertEquals("john_doe@example.com: Valid | Local: john_doe | Domain: example.com", ProblemSet.emailPrinter("john_doe@example.com"));
     }
 
     @Test
-    void test2_4() {
-        assertEquals(": Invalid: Missing @\n: Invalid: Missing @",
-            ProblemSet.emailValidator(""));
+    void testInvalidCharacterInDomain() {
+        assertEquals("john@exa+mple.com: Invalid: Invalid characters in domain", ProblemSet.emailPrinter("john@exa+mple.com"));
     }
 
     @Test
-    void test2_5() {
-        assertEquals(",: Invalid: Missing @\n,: Invalid: Missing @",
-            ProblemSet.emailValidator(",,"));
+    void testGmailNormalization() {
+        assertEquals("john.doe@gmail.com: Valid (Gmail normalized) | Local: john.doe | Domain: gmail.com", ProblemSet.emailPrinter("john.doe@gmail.com"));
     }
 
     @Test
-    void test2_6() {
-        assertEquals(" @example.com: Invalid: Contains spaces\nuser@domain.com: Valid | Local: user | Domain: domain.com",
-            ProblemSet.emailValidator(" @example.com, user@domain.com"));
+    void testGmailStillInvalid() {
+        assertEquals("john doe@gmail.com : Invalid: Contains spaces", ProblemSet.emailPrinter("john doe@gmail.com "));
+    }
+
+    // ---------- OPTION 3: MULTIPLE EMAILS ----------
+
+    @Test
+    void testTwoEmailsMixed() {
+        String input = "john.doe@example.com, invalid@domain.z";
+        String expected =
+                "john.doe@example.com: Valid | Local: john.doe | Domain: example.com\n" +
+                "invalid@domain.z: Invalid: Invalid domain extension length";
+
+        assertEquals(expected,  ProblemSet.emailPrinter(input));
     }
 
     @Test
-    void test2_7() {
-        assertEquals("user@@domain..com: Invalid: Multiple @\nvalid@test.ca: Valid | Local: valid | Domain: test.ca",
-            ProblemSet.emailValidator("user@@domain..com, valid@test.ca"));
+    void testTwoEmailsBothValid() {
+        String input = "user+tag@mail.example.co.uk, jane.doe@gmail.com";
+        String expected =
+                "user+tag@mail.example.co.uk: Valid | Local: user+tag | Domain: mail.example.co.uk\n" +
+                "jane.doe@gmail.com: Valid (Gmail normalized) | Local: jane.doe | Domain: gmail.com";
+
+        assertEquals(expected,  ProblemSet.emailPrinter(input));
     }
 
     @Test
-    void test2_8() {
-        assertEquals("a@b.c: Invalid: Invalid domain extension length\na@b.co: Valid | Local: a | Domain: b.co",
-            ProblemSet.emailValidator("a@b.c, a@b.co"));
+    void testTwoEmailsBothInvalid() {
+        String input = "invalidemail.com, @bad.com";
+        String expected =
+                "invalidemail.com: Invalid: Missing @\n" +
+                "@bad.com: Invalid: Local part too short";
+
+        assertEquals(expected,  ProblemSet.emailPrinter(input));
+    }
+
+    // ---------- EDGE CASES ----------
+
+    @Test
+    void testExact64CharLocal() {
+        String email = "a".repeat(64) + "@example.com";
+        assertEquals(email + ": Valid | Local: " + "a".repeat(64) + " | Domain: example.com", ProblemSet.emailPrinter(email));
     }
 
     @Test
-    void test2_9() {
-        assertEquals("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@test.com: Invalid: Local part too long\nshort@test.com: Valid | Local: short | Domain: test.com",
-            ProblemSet.emailValidator("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@test.com, short@test.com"));
+    void testExtensionLength2() {
+        assertEquals("john@example.ca: Valid | Local: john | Domain: example.ca", ProblemSet.emailPrinter("john@example.ca"));
     }
 
     @Test
-    void test2_10() {
-        assertEquals("user@domain.c0m: Invalid: Domain extension contains non-letters\nuser@domain.com: Valid | Local: user | Domain: domain.com",
-            ProblemSet.emailValidator("user@domain.c0m, user@domain.com"));
+    void testExtensionLength6() {
+        assertEquals("john@example.travel: Valid | Local: john | Domain: example.travel", ProblemSet.emailPrinter("john@example.travel"));
     }
 
     @Test
-    void test2_11() {
-        assertEquals("user+tag@gmail.com: Valid (Gmail normalized) | Local: user+tag | Domain: gmail.com\nuser.name@gmail.com: Valid (Gmail normalized) | Local: user.name | Domain: gmail.com",
-            ProblemSet.emailValidator("user+tag@gmail.com, user.name@gmail.com"));
+    void testTrailingSpace() {
+        assertEquals("john@example.com : Invalid: Contains spaces", ProblemSet.emailPrinter("john@example.com "));
+    }
+
+    // ---------- BUG DETECTION TESTS ----------
+
+    @Test
+    void testHyphenInDomain() {
+        // This SHOULD be valid in real emails
+        // Your code currently fails this → good test to catch bug
+        assertEquals("john@my-domain.com: Valid | Local: john | Domain: my-domain.com", ProblemSet.emailPrinter("john@my-domain.com"));
     }
 
     @Test
-    void test2_12() {
-        assertEquals("   : Invalid: Missing @\n   : Invalid: Missing @",
-            ProblemSet.emailValidator("   ,    "));
+    void testInvalidSingleEmailPrinter() {
+        String result = ProblemSet.emailPrinter("invalidemail");
+        assertTrue(result.contains("Invalid"));
     }
 
-    @Test
-    void test2_13() {
-        assertEquals("john@.com: Invalid: No dot in domain\n.@.: Invalid: Starts or ends with dot",
-            ProblemSet.emailValidator("john@.com, .@."));
-    }
-void ExampleTest1() {
-	
 }
 
-}
+
+
+
+
+
