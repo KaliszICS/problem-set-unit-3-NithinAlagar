@@ -1,0 +1,15 @@
+K(30%): 100%
+I(30%): 90
+C(10%): 100
+A(30%): 95
+95.5%
+
+gmail addresses do not says (gmail normalised).  Your validStatement variable is being replaced since it is not part of your if/else ifs below it.
+the + and _ are not removed by gmail addresses, they simply can't be at the start or end.
+Avoid running a function again when you've already ran it before and are doing so on the same value.
+Example:
+if (emailValidator(email).contains("Invalid")){
+	return email + ": " + emailValidator(email);
+}
+Just save the value as a variable so your program isn't running it twice.
+Otherwise great work!
